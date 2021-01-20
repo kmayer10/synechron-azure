@@ -1,4 +1,6 @@
-### Mount File Share on Ubuntu VM
+## Mount File Share on Ubuntu VM
+
+### Installing FS utility & Azure Cli
 ```
 # sudo apt-get update -y
 # sudo apt-get install -y cifs-utils
@@ -25,7 +27,7 @@
   }
 ]
 ```
- Check if 445 port if Open, which is needed from communication between SA & Server
+ ### Check if 445 port is Open, which is needed from communication between SA & Server
  ```
 # resourceGroupName="jan-batch"
 # storageAccountName="kul"
@@ -40,3 +42,31 @@
 
 # nc -zvw3 $fileHost 445
  ```
+### Mount FS
+```
+# resourceGroupName="jan-batch"
+# storageAccountName="kul"
+# fileShareName="kul"
+# mntPath="/mnt/$storageAccountName/$fileShareName"
+# sudo mkdir -p $mntPath
+
+# httpEndpoint=$(az storage account show \
+    --resource-group $resourceGroupName \
+    --name $storageAccountName \
+    --query "primaryEndpoints.file" | tr -d '"')
+# smbPath=$(echo $httpEndpoint | cut -c7-$(expr length $httpEndpoint))$fileShareName
+
+# storageAccountKey=$(az storage account keys list \
+    --resource-group $resourceGroupName \
+    --account-name $storageAccountName \
+    --query "[0].value" | tr -d '"')
+
+# sudo mount -t cifs $smbPath $mntPath -o vers=3.0,username=$storageAccountName,password=$storageAccountKey,serverino
+```
+### Check if File Share is Successfully mounted on the Server or not
+```
+# echo $mntPath
+  /mnt/kul/kul
+# df -ah | grep -i $mntPath
+  //kul.file.core.windows.net/kul  100G     0  100G   0% /mnt/kul/kul
+```
